@@ -1,6 +1,8 @@
 # Climate-Change
 Homework 3: 697V
 
+To install git: https://git-scm.com/downloads
+
 First graph: - Timothy
 - CO2 vs Land Temperature w/ size = population, color => continent
 - Checkbox for different continents
