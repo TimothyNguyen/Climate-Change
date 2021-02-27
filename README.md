@@ -1,6 +1,22 @@
 # Climate-Change
 Homework 3: 697V
 
+First graph: - Timothy
+- CO2 vs Land Temperature w/ size = population, color => continent
+- Checkbox for different continents
+- Slider for year
+
+Second graph: - Yitian
+- Coal vs GDP w/ size = population, color => continent
+- Checkbox for different continents
+- Slider for year
+
+Third graph: - Timothy
+- wood removal vs. global temperature (line graph)
+
+Fourth graph: - Jacob
+- population of gdp per capita : electricity
+
 This project is for a data visualization course in R, plotly, and shiny.
 
 To get started:
