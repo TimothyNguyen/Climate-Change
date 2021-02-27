@@ -3,12 +3,171 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+# **HW 3 - Presentation**
 
 ```{r}
-plot(cars)
+library(shiny)
+library(ggplot2) 
+library(plotly)
+library(tidyr)
+library(dplyr)
+library(countrycode)
+```
+
+```{r}
+gdp_per_cap <- 
+  read.csv(
+    "./data/income_per_person_gdppercapita_ppp_inflation_adjusted.csv", 
+    header = TRUE, 
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+    )
+pop <-
+  read.csv(
+    "./data/population_total.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+coal_df <-
+  read.csv(
+    "./data/coal_consumption_total.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+land_temp <-
+  read.csv(
+      "./data/GlobalLandTemperaturesByCountry.csv",
+      header = TRUE,
+      stringsAsFactors = FALSE,
+      check.names = FALSE
+    )
+yearly_co2 <-
+  read.csv(
+    "./data/yearly_co2_emissions_1000_tonnes.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+wood_removal <-
+  read.csv(
+    "./data/wood_removal_cubic_meters.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+total_sulfur <-
+  read.csv(
+    "./data/total_sulfur_emission_kilotonnes.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+```
+
+```{r}
+gdp_per_cap$continent <- countrycode(sourcevar = gdp_per_cap[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+pop$continent <- countrycode(sourcevar = pop[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+coal_df$continent <- countrycode(sourcevar = coal_df[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+```
+
+```{r}
+land_temp$continent <- countrycode(sourcevar = land_temp[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+yearly_co2$continent <- countrycode(sourcevar = yearly_co2[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+wood_removal$continent <- countrycode(sourcevar = wood_removal[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+total_sulfur$continent <- countrycode(sourcevar = total_sulfur[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+```
+
+```{r}
+land_temp <- land_temp %>% drop_na("continent")
+land_temp
+```
+
+```{r}
+head(gdp_per_cap)
+```
+
+```{r}
+head(coal_df)
+```
+
+```{r}
+drop <- c("AverageTemperatureUncertainty")
+land_temp <- land_temp[!(names(land_temp) %in% drop)]
+head(land_temp)
+```
+
+We want to first analyze coal consumption
+
+```{r}
+start_year <- 1850
+end_year <- 2019
+df <- reshape(gdp_per_cap,
+              direction="long",
+              varying = list(names(gdp_per_cap)
+                             [(start_year - 1800 + 2): (end_year - 1800 + 2)]),
+              v.names = "gdpPercap",
+              idvar = c("country"),
+              timevar = "year",
+              times = start_year:end_year)
+"
+df_2 <- reshape(coal_df,
+              direction="long",
+              varying = list(names(coal_df)
+                             [2: (end_year - start_year + 2)]),
+              v.names = "coal",
+              idvar = c("country"),
+              timevar = "year",
+              times = start_year:end_year)
+"
+df_3 <- reshape(pop,
+              direction="long",
+              varying = list(names(pop)
+                             [(start_year - 1800 + 2): (end_year - 1800 + 2)]),
+              v.names = "pop",
+              idvar = c("country"),
+              timevar = "year",
+              times = start_year:end_year)
+```
+
+```{r}
+keeps_pop <- c("country", "continent", "year", "pop")
+keeps_coal <- c("country", "continent", "year", "coal")
+keeps_gdp <- c("country", "continent", "year", "gdpPercap")
+df_3 <- df_3[keeps_pop]
+df_2 <- df_2[keeps_coal]
+df <- df[keeps_gdp]
+merge_df <- merge(df, df_3) %>% merge(df_2)
+head(merge_df)
+```
+
+```{r}
+# Remove any unnecessary data
+remove(df)
+remove(df_2)
+remove(df_3)
+```
+
+```{r}
+gg <- ggplot(merge_df, aes(pop, coal, color = continent)) +
+  geom_point(aes(size = gdpPercap, frame = year, ids = country)) +
+  theme(legend.title = element_blank())
+ggplotly(gg)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
