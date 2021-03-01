@@ -3,16 +3,28 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-# **HW 3 - Presentation**
+# **Title: What are the effects of Climate Change?**
+
+By Timothy Nguyen, Qiang (Jacob) Yang, and Yitian Fu
+
+Part I:
 
 ```{r}
+# install.packages("choroplethrMaps")
 library(shiny)
 library(ggplot2) 
 library(plotly)
 library(tidyr)
 library(dplyr)
 library(countrycode)
+library(choroplethr)
+library(readr)
+library(lubridate)
 ```
+
+**Part I: Data Cleaning:**
+
+Here we're looking to load our data and clean it around a bit.
 
 ```{r}
 gdp_per_cap <- 
@@ -29,20 +41,6 @@ pop <-
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-coal_df <-
-  read.csv(
-    "./data/coal_consumption_total.csv",
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-land_temp <-
-  read.csv(
-      "./data/GlobalLandTemperaturesByCountry.csv",
-      header = TRUE,
-      stringsAsFactors = FALSE,
-      check.names = FALSE
-    )
 yearly_co2 <-
   read.csv(
     "./data/yearly_co2_emissions_1000_tonnes.csv",
@@ -50,16 +48,9 @@ yearly_co2 <-
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-wood_removal <-
+land_temp <-
   read.csv(
-    "./data/wood_removal_cubic_meters.csv",
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-total_sulfur <-
-  read.csv(
-    "./data/total_sulfur_emission_kilotonnes.csv",
+    "./data/GlobalLandTemperaturesByCountry.csv",
     header = TRUE,
     stringsAsFactors = FALSE,
     check.names = FALSE
@@ -73,105 +64,238 @@ gdp_per_cap$continent <- countrycode(sourcevar = gdp_per_cap[, "country"],
 pop$continent <- countrycode(sourcevar = pop[, "country"],
                             origin = "country.name",
                             destination = "continent")
-coal_df$continent <- countrycode(sourcevar = coal_df[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
-```
-
-```{r}
 land_temp$continent <- countrycode(sourcevar = land_temp[, "country"],
                             origin = "country.name",
                             destination = "continent")
 yearly_co2$continent <- countrycode(sourcevar = yearly_co2[, "country"],
                             origin = "country.name",
                             destination = "continent")
-wood_removal$continent <- countrycode(sourcevar = wood_removal[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
-total_sulfur$continent <- countrycode(sourcevar = total_sulfur[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
 ```
 
 ```{r}
 land_temp <- land_temp %>% drop_na("continent")
-land_temp
-```
-
-```{r}
-head(gdp_per_cap)
-```
-
-```{r}
-head(coal_df)
-```
-
-```{r}
 drop <- c("AverageTemperatureUncertainty")
 land_temp <- land_temp[!(names(land_temp) %in% drop)]
-head(land_temp)
-```
-
-We want to first analyze coal consumption
-
-```{r}
-start_year <- 1850
-end_year <- 2019
-df <- reshape(gdp_per_cap,
-              direction="long",
-              varying = list(names(gdp_per_cap)
-                             [(start_year - 1800 + 2): (end_year - 1800 + 2)]),
-              v.names = "gdpPercap",
-              idvar = c("country"),
-              timevar = "year",
-              times = start_year:end_year)
-"
-df_2 <- reshape(coal_df,
-              direction="long",
-              varying = list(names(coal_df)
-                             [2: (end_year - start_year + 2)]),
-              v.names = "coal",
-              idvar = c("country"),
-              timevar = "year",
-              times = start_year:end_year)
-"
-df_3 <- reshape(pop,
-              direction="long",
-              varying = list(names(pop)
-                             [(start_year - 1800 + 2): (end_year - 1800 + 2)]),
-              v.names = "pop",
-              idvar = c("country"),
-              timevar = "year",
-              times = start_year:end_year)
+land_temp <- within(land_temp,
+                    date <- ifelse(!is.na(as.Date(land_temp$dt, "%Y-%m-%d")),
+                            as.character(as.Date(land_temp$dt, "%Y-%m-%d")),
+                            as.character(as.Date(land_temp$dt, "%m/%d/%Y")))) 
+land_temp <- land_temp[!(names(land_temp) %in% drop)]
+land_temp <- na.omit(land_temp)
 ```
 
 ```{r}
-keeps_pop <- c("country", "continent", "year", "pop")
-keeps_coal <- c("country", "continent", "year", "coal")
-keeps_gdp <- c("country", "continent", "year", "gdpPercap")
-df_3 <- df_3[keeps_pop]
-df_2 <- df_2[keeps_coal]
-df <- df[keeps_gdp]
-merge_df <- merge(df, df_3) %>% merge(df_2)
-head(merge_df)
+
+land_df <- land_temp %>%
+  mutate(country, year = year(date)) %>%
+  group_by(country, year, continent)
+drop <- c("dt")
+land_df <- land_df[!(names(land_df) %in% drop)]
+land_df <- aggregate(land_df$AverageTemperature, 
+                     by=list(year=land_df$year, 
+                             country=land_df$country,
+                             continent=land_df$continent), 
+                              FUN=mean, na.action = na.omit)
+land_df <- land_df %>%
+  mutate(AverageTemperature = x * 1.8 + 32)
+drop <- c("x")
+land_df <- land_df[!(names(land_df) %in% drop)]
+names(land_df)[4] <- "AverageTemperature"
+land_df  
 ```
 
 ```{r}
-# Remove any unnecessary data
-remove(df)
-remove(df_2)
-remove(df_3)
+df_co2 <- yearly_co2%>%
+  pivot_longer(c('1850':'2012'), names_to = "year", 
+               values_to = "co2_emissions") %>%
+  select(country, year, co2_emissions)
+df_co2 <- na.omit(df_co2, cols=c("co2_emissions"))
+df_gdp <- gdp_per_cap%>%
+  pivot_longer(c('1850':'2012'), names_to = "year", values_to = "gdpPercap") %>%
+  select(country, year, gdpPercap)
+df_pop <- pop%>%
+  pivot_longer(c('1850':'2012'), names_to = "year", values_to = "pop") %>%
+  select(country, year, pop)
+df_land <- filter(land_df, year >= 1850) %>% filter(year <= 2012)
+df_land <- df_land %>% mutate(year = as.character(year))
 ```
 
 ```{r}
-gg <- ggplot(merge_df, aes(pop, coal, color = continent)) +
-  geom_point(aes(size = gdpPercap, frame = year, ids = country)) +
-  theme(legend.title = element_blank())
-ggplotly(gg)
+first_graph <- left_join(df_pop, df_co2) %>%
+               merge(df_land)
+first_graph <- na.omit(first_graph, cols=c("co2_emissions"))
+first_graph$CODE <- countrycode(first_graph$country, origin = 'country.name', destination = 'genc3c')
+first_graph
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+**Part II: Choropleth World Maps: Rising Temperatures & Carbon Dioxide**
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+Here we create our first shiny application. Through choropleth world maps, we wanted to visualize the land temperature of individual countries and looking at them for every year. While there is lots of missing data from countries in the beginning, the overall trend is that temperatures are rising as years increase.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+library(shiny)
+con <- factor(c('Asia','Africa', 'Americas', 'Europe', 'Oceania'))
+print(levels(con))
+ui <- fluidPage(
+    
+    sidebarLayout(
+        sidebarPanel(
+            helpText("Interactive plotting on Land Temperatures"),
+            
+            sliderInput("year", "Year (Land Temperatures)",
+                        min = range(as.numeric( first_graph$year))[1],
+                        max = range(as.numeric( first_graph$year))[2],
+                        value = range(as.numeric( first_graph$year))[1],
+                        sep = "",
+                        step = 1,
+                        animate = animationOptions(interval = 500)
+            ),
+        ),
+
+        mainPanel(
+          tabsetPanel(type = "tabs",
+                  tabPanel("AverageTemperature", plotOutput("temp_plot")),
+                  tabPanel("CO2 Emissions", plotOutput("co2_plot"))))
+    )
+)
+
+
+server <- function(input, output) {
+    
+    output$temp_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
+            rename(region = country, value = AverageTemperature) %>%
+    mutate(region = tolower(region)) %>%
+    mutate(region = recode(region,
+                            "united states"    = "united states of america",
+                          "congo, dem. rep." = "democratic republic of the congo",
+                            "congo, rep."      = "republic of congo",
+                            "korea, dem. rep." = "south korea",
+                            "korea. rep."      = "north korea",
+                            "tanzania"         = "united republic of tanzania",
+                            "serbia"           = "republic of serbia",
+                            "slovak republic"  = "slovakia",
+                            "yemen, rep."      = "yemen"))
+        country_choropleth(df, num_colors=5) + 
+                            scale_fill_brewer(palette="OrRd")
+        
+    })
+    
+    output$co2_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
+            rename(region = country, value = co2_emissions) %>%
+    mutate(region = tolower(region)) %>%
+    mutate(region = recode(region,
+                            "united states"    = "united states of america",
+                          "congo, dem. rep." = "democratic republic of the congo",
+                            "congo, rep."      = "republic of congo",
+                            "korea, dem. rep." = "south korea",
+                            "korea. rep."      = "north korea",
+                            "tanzania"         = "united republic of tanzania",
+                            "serbia"           = "republic of serbia",
+                            "slovak republic"  = "slovakia",
+                            "yemen, rep."      = "yemen"))
+        country_choropleth(df, num_colors=5) + 
+                            scale_fill_brewer(palette="OrRd")
+        
+    })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+**Part III: Scatterplotting data between variables (CO2 vs Avg Land Temperatures)**
+
+So after measuring the choropleths of CO2 emissions and average land temperatures, we notice that they were both increasing over time. We then wanted to investigate with an interactive scatterplot between CO2 emissions per tonnes vs average land temperatures in Fahrenheit.
+
+```{r}
+library(shiny)
+con <- factor(c('Asia','Africa', 'Americas', 'Europe', 'Oceania'))
+
+ui <- fluidPage(
+    titlePanel("Analyze Relationship between "),
+    
+    sidebarLayout(
+        sidebarPanel(
+            helpText("Interavtive plotting of data usng R shiny"),
+            
+            checkboxGroupInput("continent", 
+                               "Choose a continent", 
+                               choices = levels(con),
+                               selected = levels(con)),
+            
+            sliderInput("quantiles", "Quantiles of interest",
+                        min = 0,
+                        max = 100,
+                        value = c(0, 100),
+                        sep = ""),
+            
+            sliderInput("year", "Year",
+                        min = range(as.numeric(first_graph$year))[1],
+                        max = range(as.numeric(first_graph$year))[2],
+                        value = range(as.numeric(first_graph$year))[1],
+                        sep = "",
+                        step = 1,
+                        animate = animationOptions(interval = 300)
+            )
+        ),
+        tabsetPanel(type = "tabs",
+          tabPanel("Population vs CO2", plotOutput("co2_plot")),
+          tabPanel("CO2 Vs Land Temperature", plotOutput("temp_plot")))
+    )
+)
+
+
+max_b <- max(first_graph$co2_emissions)
+min_b <- min(first_graph$co2_emissions)
+max_a <- max(first_graph$pop)
+min_a <- min(first_graph$pop)
+
+server <- function(input, output) {
+    max_x <- max(first_graph$co2_emissions)
+    min_x <- min(first_graph$co2_emissions)
+    max_y <- max(first_graph$AverageTemperature)
+    min_y <- min(first_graph$AverageTemperature)
+  
+    output$co2_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
+            filter(continent %in% input$continent)
+             
+            filter(df, pop <= quantile(df$pop, 
+                                         probs = (max(input$quantiles)/100),
+                                        na.rm = TRUE)) %>%
+            filter(pop >= quantile(df$pop, 
+                                   probs = (min(input$quantiles)/100),
+                                   na.rm = TRUE)) %>%
+            ggplot(aes(x = pop, 
+                       y = co2_emissions, color=continent)) +
+            geom_point(aes(frame = year, ids = country)) + 
+            scale_x_log10(limits = c(min_a + 0.1, max_a)) + 
+            scale_y_log10(limits = c(min_b + 0.1, max_b)) + 
+            theme(legend.title = element_blank())
+    })
+    
+    output$temp_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
+            filter(continent %in% input$continent)
+             
+            filter(df, co2_emissions <= quantile(df$co2_emissions, 
+                                         probs = (max(input$quantiles)/100),
+                                        na.rm = TRUE)) %>%
+            filter(co2_emissions >= quantile(df$co2_emissions, 
+                                         probs = (min(input$quantiles)/100),
+                                   na.rm = TRUE)) %>%
+            ggplot(aes(x = co2_emissions, 
+                       y = AverageTemperature, color=continent)) +
+            geom_point(aes(size = pop, frame = year, ids = country)) + 
+            scale_x_log10(limits = c(min_x + 0.1, max_x)) + 
+            ylim(min_y, max_y) + 
+            theme(legend.title = element_blank())
+    })
+}
+shinyApp(ui = ui, server = server)
+```
