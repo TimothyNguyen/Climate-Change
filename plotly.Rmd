@@ -2,6 +2,7 @@
 library(shiny)
 #runExample("06_tabsets")
 ```
+
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -87,7 +88,6 @@ df <-
   mutate(country = as.factor(country)) %>%
   mutate(gdpPercap = as.double(gdpPercap))
 ```
-
 
 ```{r}
 # Define UI for random distribution app ----
@@ -210,4 +210,3 @@ server <- function(input, output) {
 # Create Shiny app ----
 shinyApp(ui, server)
 ```
-

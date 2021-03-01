@@ -4,6 +4,7 @@ author: "Yitian Fu"
 date: "2/27/2021"
 output: html_document
 ---
+
 ```{r}
 library(dplyr)
 library(tidyr)
@@ -123,5 +124,3 @@ server <- function(input, output) {
 
 shinyApp(ui, server)
 ```
-
-
