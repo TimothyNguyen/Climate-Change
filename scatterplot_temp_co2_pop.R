@@ -51,7 +51,7 @@ yearly_co2$continent <- countrycode(sourcevar = yearly_co2[, "country"],
                                     origin = "country.name",
                                     destination = "continent")
 
-land_temp
+#land_temp
 # Clean the data
 land_temp <- land_temp %>% drop_na("continent")
 drop <- c("AverageTemperatureUncertainty")

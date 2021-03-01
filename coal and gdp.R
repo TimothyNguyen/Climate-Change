@@ -1,18 +1,19 @@
+rm(list=ls())
 library(dplyr)
 library(tidyr)
 
-coal<- read.csv("coal_consumption_total.csv")
+coal<- read.csv("./data/coal_consumption_total.csv")
 
 gdp_per_cap <- 
   read.csv(
-    "income_per_person_gdppercapita_ppp_inflation_adjusted.csv", 
+    "./data/income_per_person_gdppercapita_ppp_inflation_adjusted.csv", 
     header = TRUE, 
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
 pop <-
   read.csv(
-    "population_total.csv",
+    "./data/population_total.csv",
     header = TRUE,
     stringsAsFactors = FALSE,
     check.names = FALSE
@@ -85,9 +86,9 @@ server <- function(input, output) {
       filter(year == input$year) %>%
       filter(continent%in%input$continent)%>%
       ggplot() +
-      #scale_x_log10(limits = range(df$GDP_per_cap))+
-      ylim(range(df$Coal_consumption))+
-      #scale_y_log10(limits= range(df$Coal_consumption))+
+      scale_x_log10(limits = range(df$GDP_per_cap))+
+      # ylim(range(df$Coal_consumption))+
+      scale_y_log10(limits= c(min(df$Coal_consumption) + 0.1, max(df$Coal_consumption)))+
       geom_point(aes(x =GDP_per_cap, y = Coal_consumption, color=continent, size= Population))
     
   })
