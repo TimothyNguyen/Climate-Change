@@ -3,7 +3,11 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-# **HW 3 - Presentation**
+# **Title: What are the effects of Climate Change?**
+
+By Timothy Nguyen, Qiang (Jacob) Yang, and Yitian Fu
+
+Part I:
 
 ```{r}
 # install.packages("choroplethrMaps")
@@ -16,12 +20,11 @@ library(countrycode)
 library(choroplethr)
 library(readr)
 library(lubridate)
-library(gridExtra)
 ```
 
 **Part I: Data Cleaning:**
 
-Here we're looking to load our data and clean it around a bit
+Here we're looking to load our data and clean it around a bit.
 
 ```{r}
 gdp_per_cap <- 
@@ -38,31 +41,9 @@ pop <-
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-coal_df <-
-  read.csv(
-    "./data/coal_consumption_total.csv",
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-
 yearly_co2 <-
   read.csv(
     "./data/yearly_co2_emissions_1000_tonnes.csv",
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-wood_removal <-
-  read.csv(
-    "./data/wood_removal_cubic_meters.csv",
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
-total_sulfur <-
-  read.csv(
-    "./data/total_sulfur_emission_kilotonnes.csv",
     header = TRUE,
     stringsAsFactors = FALSE,
     check.names = FALSE
@@ -83,19 +64,10 @@ gdp_per_cap$continent <- countrycode(sourcevar = gdp_per_cap[, "country"],
 pop$continent <- countrycode(sourcevar = pop[, "country"],
                             origin = "country.name",
                             destination = "continent")
-coal_df$continent <- countrycode(sourcevar = coal_df[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
 land_temp$continent <- countrycode(sourcevar = land_temp[, "country"],
                             origin = "country.name",
                             destination = "continent")
 yearly_co2$continent <- countrycode(sourcevar = yearly_co2[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
-wood_removal$continent <- countrycode(sourcevar = wood_removal[, "country"],
-                            origin = "country.name",
-                            destination = "continent")
-total_sulfur$continent <- countrycode(sourcevar = total_sulfur[, "country"],
                             origin = "country.name",
                             destination = "continent")
 ```
@@ -134,17 +106,17 @@ land_df
 
 ```{r}
 df_co2 <- yearly_co2%>%
-  pivot_longer(c('1900':'2012'), names_to = "year", 
+  pivot_longer(c('1850':'2012'), names_to = "year", 
                values_to = "co2_emissions") %>%
   select(country, year, co2_emissions)
 df_co2 <- na.omit(df_co2, cols=c("co2_emissions"))
 df_gdp <- gdp_per_cap%>%
-  pivot_longer(c('1900':'2012'), names_to = "year", values_to = "gdpPercap") %>%
+  pivot_longer(c('1850':'2012'), names_to = "year", values_to = "gdpPercap") %>%
   select(country, year, gdpPercap)
 df_pop <- pop%>%
-  pivot_longer(c('1900':'2012'), names_to = "year", values_to = "pop") %>%
+  pivot_longer(c('1850':'2012'), names_to = "year", values_to = "pop") %>%
   select(country, year, pop)
-df_land <- filter(land_df, year >= 1900) %>% filter(year <= 2012)
+df_land <- filter(land_df, year >= 1850) %>% filter(year <= 2012)
 df_land <- df_land %>% mutate(year = as.character(year))
 ```
 
@@ -178,26 +150,19 @@ ui <- fluidPage(
                         step = 1,
                         animate = animationOptions(interval = 500)
             ),
-            helpText("Interactive plotting on CO2 Emissions"),
-            
-            sliderInput("year2", "Year",
-                        min =  range(as.numeric( first_graph$year))[1],
-                        max = range(as.numeric( first_graph$year))[2],
-                        value = range(as.numeric( first_graph$year))[1],
-                        sep = "",
-                        step = 1,
-                        animate = animationOptions(interval = 500)
-            )
         ),
 
-        mainPanel(plotOutput("gap"))
-    ),
+        mainPanel(
+          tabsetPanel(type = "tabs",
+                  tabPanel("AverageTemperature", plotOutput("temp_plot")),
+                  tabPanel("CO2 Emissions", plotOutput("co2_plot"))))
+    )
 )
 
 
 server <- function(input, output) {
     
-    output$gap <- renderPlot({ 
+    output$temp_plot <- renderPlot({ 
         df <- first_graph %>%
             filter(year == input$year) %>%
             rename(region = country, value = AverageTemperature) %>%
@@ -212,11 +177,14 @@ server <- function(input, output) {
                             "serbia"           = "republic of serbia",
                             "slovak republic"  = "slovakia",
                             "yemen, rep."      = "yemen"))
-        p1 <- country_choropleth(df, num_colors=5) + 
+        country_choropleth(df, num_colors=5) + 
                             scale_fill_brewer(palette="OrRd")
         
-        df2 <- first_graph %>%
-            filter(year == input$year2) %>%
+    })
+    
+    output$co2_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
             rename(region = country, value = co2_emissions) %>%
     mutate(region = tolower(region)) %>%
     mutate(region = recode(region,
@@ -229,10 +197,8 @@ server <- function(input, output) {
                             "serbia"           = "republic of serbia",
                             "slovak republic"  = "slovakia",
                             "yemen, rep."      = "yemen"))
-        p2 <- country_choropleth(df2, num_colors=5) + 
+        country_choropleth(df, num_colors=5) + 
                             scale_fill_brewer(palette="OrRd")
-        
-        grid.arrange(p1, arrangeGrob(p2), nrow = 2)
         
     })
 }
@@ -247,9 +213,9 @@ So after measuring the choropleths of CO2 emissions and average land temperature
 ```{r}
 library(shiny)
 con <- factor(c('Asia','Africa', 'Americas', 'Europe', 'Oceania'))
-print(levels(con))
+
 ui <- fluidPage(
-    titlePanel("C02 vs Land Temperature"),
+    titlePanel("Analyze Relationship between "),
     
     sidebarLayout(
         sidebarPanel(
@@ -260,7 +226,7 @@ ui <- fluidPage(
                                choices = levels(con),
                                selected = levels(con)),
             
-            sliderInput("quantiles", "CO2 Quantiles of interest",
+            sliderInput("quantiles", "Quantiles of interest",
                         min = 0,
                         max = 100,
                         value = c(0, 100),
@@ -271,23 +237,48 @@ ui <- fluidPage(
                         max = range(as.numeric(first_graph$year))[2],
                         value = range(as.numeric(first_graph$year))[1],
                         sep = "",
-                        step = 5,
-                        animate = animationOptions(interval = 500)
+                        step = 1,
+                        animate = animationOptions(interval = 300)
             )
         ),
-        
-        mainPanel(plotOutput("gap"))
+        tabsetPanel(type = "tabs",
+          tabPanel("Population vs CO2", plotOutput("co2_plot")),
+          tabPanel("CO2 Vs Land Temperature", plotOutput("temp_plot")))
     )
 )
 
-max_x <- max(first_graph$co2_emissions)
-min_x <- min(first_graph$co2_emissions)
-max_y <- max(first_graph$AverageTemperature)
-min_y <- min(first_graph$AverageTemperature)
+
+max_b <- max(first_graph$co2_emissions)
+min_b <- min(first_graph$co2_emissions)
+max_a <- max(first_graph$pop)
+min_a <- min(first_graph$pop)
 
 server <- function(input, output) {
+    max_x <- max(first_graph$co2_emissions)
+    min_x <- min(first_graph$co2_emissions)
+    max_y <- max(first_graph$AverageTemperature)
+    min_y <- min(first_graph$AverageTemperature)
+  
+    output$co2_plot <- renderPlot({ 
+        df <- first_graph %>%
+            filter(year == input$year) %>%
+            filter(continent %in% input$continent)
+             
+            filter(df, pop <= quantile(df$pop, 
+                                         probs = (max(input$quantiles)/100),
+                                        na.rm = TRUE)) %>%
+            filter(pop >= quantile(df$pop, 
+                                   probs = (min(input$quantiles)/100),
+                                   na.rm = TRUE)) %>%
+            ggplot(aes(x = pop, 
+                       y = co2_emissions, color=continent)) +
+            geom_point(aes(frame = year, ids = country)) + 
+            scale_x_log10(limits = c(min_a + 0.1, max_a)) + 
+            scale_y_log10(limits = c(min_b + 0.1, max_b)) + 
+            theme(legend.title = element_blank())
+    })
     
-    output$gap <- renderPlot({ 
+    output$temp_plot <- renderPlot({ 
         df <- first_graph %>%
             filter(year == input$year) %>%
             filter(continent %in% input$continent)
@@ -306,6 +297,5 @@ server <- function(input, output) {
             theme(legend.title = element_blank())
     })
 }
-
 shinyApp(ui = ui, server = server)
 ```
