@@ -1,0 +1,20 @@
+
+```{r}
+gg <- ggplot(df, aes(gdpPercap, Coal_consumption, color = continent)) +
+  geom_point(aes(size = pop, frame = year, ids = country)) +
+  scale_x_log10() 
+ggplotly(gg)
+```
+
+```{r}
+gg <- ggplot(df, aes(gdpPercap, EnergyUse_pp, color = continent)) +
+  geom_point(aes(size = pop, frame = year, ids = country)) +
+  scale_x_log10() 
+ggplotly(gg)
+```
+
+```{r}
+gg <- ggplot(df, aes(gdpPercap, CO2_Emissions_pp, color = continent)) +
+  geom_point(aes(size = pop, frame = year, ids = country)) 
+ggplotly(gg)
+```
