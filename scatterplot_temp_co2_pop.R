@@ -183,5 +183,5 @@ server <- function(input, output) {
       theme(legend.title = element_blank())
   })
 }
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
 

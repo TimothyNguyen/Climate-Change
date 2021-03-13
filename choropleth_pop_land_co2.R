@@ -97,6 +97,7 @@ first_graph <- left_join(df_pop, df_co2) %>%
 first_graph <- na.omit(first_graph, cols=c("co2_emissions"))
 first_graph$CODE <- countrycode(first_graph$country, origin = 'country.name', destination = 'genc3c')
 
+
 con <- factor(c('Asia','Africa', 'Americas', 'Europe', 'Oceania'))
 print(levels(con))
 ui <- fluidPage(

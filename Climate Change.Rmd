@@ -1,0 +1,246 @@
+---
+title: "Climate Change"
+author: "Yitian Fu, Timothy Nguyen, Qiang Yang"
+date: "2/28/2021"
+output: ioslides_presentation
+runtime: shiny
+---
+
+## Outline
+
+-   Interesting Questions
+
+    -   Why is it important
+
+-   Datasets
+
+    -   Datasets used (source)
+    -   Variables and Proxy Variables
+    -   Potential Weaknesses
+
+-   Data Visualization
+
+    -   Technics used for visualizing data
+    -   Result Plots
+
+-   Conclusions
+
+-   Q & A
+
+## Interesting Questions
+
+-   How does human development influence the average temperature around the world and how does this relationship evolve over the years?
+
+    -   The relationship between gdpPercap and $CO_2$.
+    -   The relationship between population and $CO_2$.
+    -   The relationship between $CO_2$ and average temperature.
+
+-   How does the energy consumption affect the $CO_2$ emissions around the world and how does this relationship evolve over the years?
+
+    -   The relationship between total energy consumption and $CO_2$.
+    -   The relationship between different energy consumption and the total energy consumption.
+
+## Interesting Questions
+
+-   Why is it important
+
+    -   We wanted to visualize and understand more about the effects of climate change caused from carbon dioxide and its sources such as coal, electricity, and oil. Additionally, we wanted to explore potential confounding variable that may lead to the rise of climate change such as GDP per capita.
+
+## Datasets
+
+-   Datasets Used (Source):
+
+    -   "Coal_consumption_total.csv" (Gapminder)
+    -   "electricity_use_per_person.csv" (Gapminder)
+    -   "coal_consumption_per_cap.csv" (Gapminder)
+    -   "oil_consumption_per_cap. csv" (Gapminder)
+    -   "Income_per_person_gdppercapita_ppp_inflation_adjusted.csv" (HW1 assignment)
+    -   "Life_expectancy_years.csv" (HW1 assignment)
+    -   "Population_total.csv" (HW1 assignment)
+    -   "Energy_use_per_person.csv" (Gapminder)
+    -   "Co2_emissions_tonnes_per_person.csv" (Gapminder)
+    -   "GlobalLandTemperaturesByCountry.csv" (Kaggle)
+
+## Datasets
+
+-   Variables used:
+
+    -   gdpPercap: GDP per capita
+    -   pop: population
+    -   CoalUse_pp: Coal consumption per person
+    -   ElecUse_pp: Electricity use per person
+    -   OilUse_pp: oil consumption per person
+    -   EnergyUse_pp: Total energy use per person
+    -   AverageTemperature: Average temperature for each country
+    -   Coal_consumption: total amount of coal consumption
+    -   CO2_Emissions_pp: CO2 emissions tonnes per person
+
+## Datasets
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plotly)
+library(countrycode)
+gdp_per_cap <- 
+  read.csv(
+    "./data/income_per_person_gdppercapita_ppp_inflation_adjusted.csv", 
+    header = TRUE, 
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+life_exp <- 
+  read.csv(
+    "./data/life_expectancy_years.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+pop <-
+  read.csv(
+    "./data/population_total.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+energy_use_pp <- 
+  read.csv(
+    "./data/energy_use_per_person.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+co2_em_pp <-
+  read.csv(
+    "./data/co2_emissions_tonnes_per_person.csv",
+    header = TRUE,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+coal<- read.csv("./data/coal_consumption_total.csv")
+
+coal_long <-
+  coal %>%
+  pivot_longer(setdiff(colnames(coal), "country"), names_to = "Year", values_to = "Coal_consumption")
+
+coal_long$Year<-substr(coal_long$Year,2,5)
+
+gdp_per_cap_long <- gdp_per_cap%>%
+  pivot_longer(c('1960':'2015'), names_to = "year", values_to = "gdpPercap") %>%
+  select(country, year, gdpPercap)
+
+life_exp_long <- life_exp%>%
+  pivot_longer(c('1960':'2015'), names_to = "year", values_to = "lifeExp") %>%
+  select(country, year, lifeExp)
+
+
+pop_long <- pop%>%
+  pivot_longer(c('1960':'2015'), names_to = "year", values_to = "pop") %>%
+  select(country, year, pop)
+
+
+energy_use_pp_long <- energy_use_pp%>%
+  pivot_longer(c('1960':'2015'), names_to = "year", values_to = "EnergyUse_pp") %>%
+  select(country, year, EnergyUse_pp)
+
+
+co2_em_pp_long <- co2_em_pp%>%
+  pivot_longer(c('1960':'2015'), names_to = "year", values_to = "CO2_Emissions_pp") %>%
+  select(country, year, CO2_Emissions_pp)
+
+names(coal_long)[names(coal_long)=="Year"]="year"
+df <- 
+  left_join(energy_use_pp_long, co2_em_pp_long, by = c("country", "year")) %>%
+  left_join(gdp_per_cap_long, by = c("country", "year")) %>%
+  left_join(pop_long, by = c("country", "year"))%>%
+  left_join(coal_long, by = c("country", "year"))%>%
+  drop_na()%>%
+  mutate(continent = as.factor(countrycode(sourcevar = country, origin = "country.name", destination = "continent")))%>%
+  mutate(year = as.integer(year)) %>%
+  mutate(country = as.factor(country)) %>%
+  mutate(gdpPercap = as.double(gdpPercap))
+head(df)
+
+```
+
+## Datasets
+
+-   Proxy Variables
+
+    -   EnergyUse_pp is a proxy for CO2_Emissions_pp
+    -   ElecUse_pp is a proxy for EnergyUse_pp
+    -   OilUse_pp is a proxy for EnergyUse_pp
+    -   pop is a proxy for CO2_Emissions_pp
+    -   CO2_Emissions_pp is a proxy for AverageTemperature.
+
+-   Potential Weaknesses
+
+    -   Missing data, which may affect the results we got.
+    -   Different datasets have different year range.
+
+## Data Visualization
+
+-   Technics used for visualizing data
+
+    -   `Left_join` (combine data)
+    -   `pivot_longer` (pivot data from wide to long)
+    -   `mutate` (add column for data)
+    -   `ggplot` (make plots)
+    -   `plotly` (create data visualization)
+    -   `Countrycode` package (assign continent for each country)
+    -   `Shiny` app
+
+## Data Visualization
+
+-   The relationship between gdpPercap and the $CO_2$:
+
+```{r, echo=FALSE, warning=FALSE}
+library(ggplot2)
+gg <- ggplot(df, aes(gdpPercap, CO2_Emissions_pp, color = continent)) +
+  geom_point(aes(size = pop, frame = year, ids = country)) +
+  scale_x_log10()
+ggplotly(gg)
+```
+
+## Data Visualization
+
+-   The relationship between Population and $CO_2$.
+-   The relationship between $CO_2$ and average temperature.
+
+```{r}
+library(shiny)
+#shinyAppFile("scatterplot_temp_co2_pop.R")
+```
+
+## Data Visualization
+
+-   The average temperature changes over years
+
+```{r}
+shinyAppFile("choropleth_pop_land_co2.R")
+```
+
+## Data Visualization
+
+-   The relationship between total energy consumption and $CO_2$;
+
+    -   The relationship between different energy consumption and $CO_2$:
+
+    ```{r}
+    shinyAppFile("Energy.R")
+    ```
+
+## Conclusion
+
+-   The reason that carbon emissions are increasing is because the population growth sharply and the standard of living throughout the world increases.
+-   People are still extremely dependent on utilizing different sources of energy such as coal and oil to construct roads, bridges and other infrastructures, which make up a lot of the carbon footprint.
+-   As a result, we see a slight increase in the average land temperature throughout the past century.
+-   Through this work, we realize how important it is for people to start moving towards other energy sources. If not, we'll continue to see a positive correlation between the population growth/gdp per capita with land temperatures and co2 emissions. At some point, it could make the earth less inhabitable.
+
+## Source
+
+-   <https://www.gapminder.org/data/>
+
+## Q & A

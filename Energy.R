@@ -235,4 +235,4 @@ server <- function(input, output) {
   
 }
 
-shinyApp(ui, server)
+Energy_app <- shinyApp(ui, server)
