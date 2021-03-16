@@ -104,7 +104,3 @@ server <- function(input, output) {
 ```{r}
 shinyApp(ui, server)
 ```
-
-```{r}
-
-```
