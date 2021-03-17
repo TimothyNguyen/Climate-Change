@@ -47,8 +47,6 @@ global_temp_year <- global_temp_year[!(names(global_temp_year) %in% drop)]
 global_temp_year <- global_temp_year %>%
   filter(year >= 1850)
 
-global_temp_year
-
 ggplot(global_temp_year, 
        aes(x=year, y = LandAverageTemperature, group=1)) +
        geom_line() + 
