@@ -7,17 +7,16 @@ runtime: shiny
 ---
 
 ## Why is it important?
-
--   Global warming is a serious problem, which also causes lots of disasters around the world. (Ice breaking, sea rising, extreme temperature, flood, drought and so on).
--   To solve this problem, we want to analyze what causes global warming and how can we use this understanding to develop effective solutions and mitigation strategies?
--   If we better understand the relation between human activity and the climate we might be able to suggest better ways of action.
+- Global warming is a serious problem, which also causes lots of disasters around the world. (Ice breaking, sea rising, extreme temperature, flood, drought and so on).
+- To solve this problem, we want to analyze what causes global warming and how can we use this understanding to develop effective solutions and mitigation strategies?
+- If we better understand the relation between human activity and the climate we might be able  to suggest better ways of action.
 
 ## Datasets
-
 ```{r, echo=FALSE,out.width="100%"}
 knitr::include_graphics("combined_tables.png")
 
 ```
+
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 library(shiny)
@@ -33,10 +32,10 @@ library(forcats)
 library(plyr)
 ```
 
+
+
 ## Does global warming really exist?
-
 ### LandAverageTemperature vs. year
-
 ```{r, echo=FALSE}
 global_temp <- 
   read.csv(
@@ -86,10 +85,12 @@ ggplot(global_temp_year,
       scale_x_discrete(breaks=seq(1850, 2015, 10))
 ```
 
+
+
+
+
 ## What causes global warming?
-
 ### LandAverageTemperature vs. co2_emissions
-
 ```{r, warning=FALSE, echo=FALSE}
 global_temp <- 
   read.csv(
@@ -166,10 +167,18 @@ gg <- ggplot(co2_temp,
 ggplotly(gg)
 ```
 
+
+
+
+
+
+
+
+
+
+
 ## What causes global warming?
-
 ### co2_emissions vs. year
-
 ```{r, echo=FALSE}
 yearly_co2 <-
   read.csv(
@@ -206,8 +215,9 @@ ggplot(global_co2,
   scale_x_discrete(breaks=seq(1850, 2015, 10))
 ```
 
-## What causes the increase in CO_2?
 
+
+## What causes the increase in CO_2?
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 annual_co2_emissions <- read.csv(
   "./data/co-emissions-by-sector.csv", 
@@ -220,6 +230,16 @@ world <- annual_co2_emissions%>%
   filter(annual_co2_emissions$Entity == "World")%>%
   subset(select = -c(Entity, Code))%>%
   pivot_longer(!Year, names_to = "Categories", values_to = "amount")
+world <- world %>%
+  mutate(Categories = fct_recode(Categories,
+                                 "Building" = "Building (CAIT, 2020)", 
+                                 "Electricity & Heat" = "Electricity & Heat (CAIT, 2020)",
+                                 "Land-Use Change and Forestry" = "Land-Use Change and Forestry (CAIT, 2020)",
+                                 "Manufacturing & Construction" = "Manufacturing & Construction (CAIT, 2020)",
+                                 "Other Fuel Combustion" = "Other Fuel Combustion (CAIT, 2020)",
+                                 "Transport" = "Transport (CAIT, 2020)",
+                                 "Fugitive Emissions" = "Fugitive Emissions (CAIT, 2020)",
+                                 "Industry" = "Industry (CAIT, 2020)"))
 
 ui <-
   fluidPage(
@@ -254,12 +274,11 @@ server <- function(input, output) {
         filter(Year == input$year)%>%
         mutate(Categories = fct_reorder(Categories, amount))%>%
         ggplot(aes(x = Categories, y = amount, fill = Categories)) +
-        # geom_text(aes(y = 0, label = paste(Categories, " ")), vjust = 0.2, hjust = 1, size = 3) +
         geom_text(aes(y = amount, label = amount, hjust=0), size = 3)+
         geom_bar(stat = "identity")+
         coord_flip()+
         labs(x = "", y = "")+
-        ggtitle(paste("CO2 emissions by sector, World, ", input$year, "unit in (million tonnes)"))+
+        ggtitle(paste("CO2 emissions by sector, World, ", input$year, "unit in (million t)"))+
         theme(legend.title = element_blank(), legend.position = "none")
     })
 }
@@ -270,7 +289,6 @@ shinyApp(ui, server)
 ```
 
 ## Which countries have more effect on global warming?
-
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 yearly_co2 <-
   read.csv(
@@ -357,8 +375,10 @@ server <- function(input, output) {
 shinyApp(ui, server)
 ```
 
-## What are the consequences of global warming?
 
+
+## What are the consequences of global warming?
+### Annual number of People killed in extreme environment
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
 flood_death<-read.csv("./data/flood_deaths_annual_number.csv")
@@ -442,12 +462,24 @@ subplot(
 
 ```
 
+
+
+
 ## Conclusion
+- Human activities are increasingly influencing the climate and the earth's temperature, which adds enormous amounts of greenhouse gases to those naturally occurring in the atmosphere, increasing the greenhouse effect and global warming.
+- As the main greenhouse gas, the global breakdown for $CO_2$ is that: electricity and heat production dominates, followed by transport, and manufacturing and construction.  
+- China, the United States, India, Russia and Japan are the five countries with the highest $CO_2$ emissions. 
+
+## Conclusion
+- Climate change affects all regions around the world. In some regions extreme weather events and rainfall are becoming more common while others are experiencing more extreme heat waves and droughts. These impacts are expected to intensify in the coming decades.
+- In order to reduce the impact of human activities on global warming, it is a good time for us to consider how to reduce the $CO_2$ emissions: use more renewable energy, drive a fuel-efficient or electric vehicle, plant more trees, etc.
+
+
 
 ## Resources
+- <https://www.gapminder.org/data/>
+- <https://www.climatewatchdata.org/data-explorer/historical-emissions>
+- <https://ec.europa.eu/clima/change/causes_en>
 
--   <https://www.gapminder.org/data/>
--   <https://www.climatewatchdata.org/data-explorer/historical-emissions>
--   <https://ec.europa.eu/clima/change/causes_en>
 
 # Q & A
