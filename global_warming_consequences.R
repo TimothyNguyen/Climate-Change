@@ -82,6 +82,7 @@ number_of_countries_disaster <-
   left_join(times_flood_death, times_drought_death, by = "Year") %>%
   left_join(times_extreme_temp_death, by = "Year")
 
+number_of_countries_disaster
 
 subplot(
   plot_ly(number_of_countries_disaster, x=~times_drought_death, y=~Year, name="drought"),
