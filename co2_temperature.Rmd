@@ -95,12 +95,12 @@ co2_temp
 ```
 
 ```{r}
-ggplot(co2_temp, 
-       aes(x=co2_emissions, y = LandAverageTemperature, group=1)) +
+gg <- ggplot(co2_temp, 
+       aes(x=co2_emissions, y = LandAverageTemperature)) +
        geom_line() + 
-       geom_point() + 
+       geom_point(aes(ids = year)) + 
        theme(
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
        ) 
-      # + scale_x_discrete(breaks=seq(1850, 2015, 10))
+ggplotly(gg)
 ```
